@@ -1,0 +1,183 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl"]
+}
+
+// for local
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+// /*
+// |--------------------------------------------------------------------------
+// | Enum Value
+// |--------------------------------------------------------------------------
+// */
+
+enum TypeRoleUser {
+  USER
+}
+
+enum TypeRoleAdmin {
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum TypeStatusUser {
+  ACTIVE
+  INACTIVE
+  BANNED
+}
+
+enum TypeSetting {
+  AUTOMATION_SEND_EMAIL_VERIFICATION
+  REQUIRE_VERIF_EMAIL_FOR_LOGIN
+}
+
+enum TypeNews {
+  INTERNAL
+  EXTERNAL
+}
+
+// /*
+// |--------------------------------------------------------------------------
+// | Model
+// |--------------------------------------------------------------------------
+// */
+
+model GlobalSetting {
+  id          String      @id @default(auto()) @map("_id") @db.ObjectId
+  typeSetting TypeSetting @unique
+  name        String
+  description String
+  isActivated Boolean
+}
+
+model User {
+  id                  String         @id @default(auto()) @map("_id") @db.ObjectId
+  name                String
+  username            String         @unique
+  email               String         @unique
+  password            String
+  profilePic          String?
+  role                TypeRoleUser   @default(USER)
+  isVerifiedEmail     Boolean        @default(false)
+  codeVerify          Int?
+  pointXp             Int            @default(0)
+  expiresCodeVerifyAt DateTime?
+  status              TypeStatusUser @default(ACTIVE)
+
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  userOnPractice UserOnPractice[]
+  userOnQuiz     UserOnQuiz[]
+
+  // index
+  @@index([id, username, email])
+}
+
+model UserAdmin {
+  id         String         @id @default(auto()) @map("_id") @db.ObjectId
+  name       String
+  username   String         @unique
+  email      String         @unique
+  password   String
+  profilePic String?
+  role       TypeRoleAdmin  @default(ADMIN)
+  status     TypeStatusUser @default(ACTIVE)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // index
+  @@index([id, username, email])
+}
+
+model Lesson {
+  id       String       @id @default(auto()) @map("_id") @db.ObjectId
+  number   Int
+  title    String
+  slug     String       @unique
+  units    UnitLesson[]
+  practice Practice[]
+  quiz     Quiz[]
+}
+
+model UnitLesson {
+  id       String @id @default(auto()) @map("_id") @db.ObjectId
+  title    String
+  slug     String @unique
+  idLesson String @db.ObjectId
+  lesson   Lesson @relation(fields: [idLesson], references: [id])
+  content  Json[]
+
+  // index
+  @@index([id, idLesson])
+}
+
+model Practice {
+  id              String @id @default(auto()) @map("_id") @db.ObjectId
+  idLesson        String @db.ObjectId
+  title           String
+  slug            String @unique
+  backgroundColor String
+  backgroundImage String
+  signs           Json[]
+  questions       Json[]
+
+  lesson         Lesson           @relation(fields: [idLesson], references: [id])
+  userOnPractice UserOnPractice[]
+
+  // index
+  @@index([idLesson])
+}
+
+model Quiz {
+  id              String @id @default(auto()) @map("_id") @db.ObjectId
+  idLesson        String @db.ObjectId
+  title           String
+  slug            String @unique
+  backgroundColor String
+  backgroundImage String
+  signs           Json[]
+  questions       Json[]
+
+  lesson     Lesson       @relation(fields: [idLesson], references: [id])
+  userOnQuiz UserOnQuiz[]
+
+  // index
+  @@index([idLesson])
+}
+
+model UserOnPractice {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  idUser          String   @db.ObjectId
+  idPractice      String   @db.ObjectId
+  isDone          Boolean  @default(false)
+  score           Int?
+  currentNumber   Int?
+  practiceHistory Json[]
+  user            User     @relation(fields: [idUser], references: [id], onDelete: Cascade)
+  practice        Practice @relation(fields: [idPractice], references: [id], onDelete: Cascade)
+
+  @@unique([idUser, idPractice])
+}
+
+model UserOnQuiz {
+  id            String  @id @default(auto()) @map("_id") @db.ObjectId
+  idUser        String  @db.ObjectId
+  idQuiz        String  @db.ObjectId
+  isDone        Boolean @default(false)
+  score         Int?
+  xp            Int?
+  currentNumber Int?
+  quizHistory   Json[]
+  user          User    @relation(fields: [idUser], references: [id], onDelete: Cascade)
+  quiz          Quiz    @relation(fields: [idQuiz], references: [id], onDelete: Cascade)
+
+  @@unique([idUser, idQuiz])
+}
