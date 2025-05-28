@@ -15,7 +15,7 @@ export class GatewayService {
         return await this.gatewayMlRepository.httpPostPredictionAsl(file)
     }
 
-    async uploadFile(file: Express.Multer.File, remoteFileName: string, folder: FolderBucketType) {
-        return await this.gatewayStorageBucketRepository.uploadFile(file, remoteFileName, folder)
-    }
+    // async uploadFile(file: Express.Multer.File, remoteFileName: string, folder: FolderBucketType) {
+    //     return await this.gatewayStorageBucketRepository.uploadFile(file, remoteFileName, folder)
+    // }
 }
